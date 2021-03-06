@@ -3,25 +3,31 @@
 # Name: Jana Osea
 # Due Date: March 14, 2021
 
-
+# import data and separate by species
 data <- read.csv("data.csv")
-View(data)
-
 cherry_df <- data[which(data$species=="cherry"),2:3]
 pear_df <- data[which(data$species=="pear"),2:3]
 
-
 # Method of Moments for Parameter Estimation
-M1_cherry <- matrix(apply(cherry_df, 2, sum) / nrow(cherry_df), nrow = 2)
-M2_cherry <- matrix(apply(cherry_df*cherry_df, 2, sum) / nrow(cherry_df), nrow = 2)
-mu_cherry <- M1_cherry
-sigma_cherry <- M2_cherry - M1_cherry^2
+calculate_parameters <- function(df) {
+  mu1 <- matrix(apply(df, 2, mean),nrow = 2)
+  mu2 <- matrix(apply(df*df, 2, mean), nrow = 2)
+  muxy <- mean(apply(df,1,prod))
+  muxmuy <- prod(mu1)
+  
+  sigma_x_y <- mu2 - mu1^2
+  sigma_xy <- muxy - muxmuy
+  Sigma <- matrix(c(sigma_x_y[1,1], sigma_xy,
+                    sigma_xy, sigma_x_y[2,1]), 
+                  ncol = 2, nrow = 2)
+  print(list("mu" = mu1, "Sigma"= Sigma))
+  
+}
 
-M1_pear <- matrix(apply(pear_df, 2, sum) / nrow(pear_df), nrow = 2)
-M2_pear <- matrix(apply(pear_df*pear_df, 2, sum) / nrow(pear_df), nrow = 2)
-mu_pear <- M1_pear
-sigma_pear <- M2_pear - M1_pear^2
+param_cherry <- calculate_parameters(cherry_df)
+param_pear <- calculate_parameters(pear_df)
+Sigma <- (param_cherry$Sigma + param_pear$Sigma) / 2
 
 
-
+# lambda calculations
 
