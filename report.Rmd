@@ -2,7 +2,8 @@
 title: "report"
 author: "Jana Osea"
 date: "March 4, 2021"
-output: pdf_document
+output: p
+df_document
 ---
 
 ```{r setup, include=FALSE}

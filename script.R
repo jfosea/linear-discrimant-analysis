@@ -3,31 +3,61 @@
 # Name: Jana Osea
 # Due Date: March 14, 2021
 
+library(mvtnorm)
+library(ggplot2)
+library(gridExtra)
+
 # import data and separate by species
-data <- read.csv("data.csv")
+data <- read.csv("data/data1.csv")
+names(data)[1] <- "species"
 cherry_df <- data[which(data$species=="cherry"),2:3]
 pear_df <- data[which(data$species=="pear"),2:3]
 
-# Method of Moments for Parameter Estimation
-calculate_parameters <- function(df) {
-  mu1 <- matrix(apply(df, 2, mean),nrow = 2)
-  mu2 <- matrix(apply(df*df, 2, mean), nrow = 2)
-  muxy <- mean(apply(df,1,prod))
-  muxmuy <- prod(mu1)
-  
-  sigma_x_y <- mu2 - mu1^2
-  sigma_xy <- muxy - muxmuy
-  Sigma <- matrix(c(sigma_x_y[1,1], sigma_xy,
-                    sigma_xy, sigma_x_y[2,1]), 
-                  ncol = 2, nrow = 2)
-  print(list("mu" = mu1, "Sigma"= Sigma))
-  
-}
 
+# method of moments for parameter estimation
+source("functions/estimate params.R")
 param_cherry <- calculate_parameters(cherry_df)
 param_pear <- calculate_parameters(pear_df)
 Sigma <- (param_cherry$Sigma + param_pear$Sigma) / 2
 
 
-# lambda calculations
+# density calculations
+source("functions/density functions.R")
+data$density_cherry <- mapply(dens_cherry, data$width, data$length)
+data$density_pear <- mapply(dens_pear, data$width, data$length)
+data$density_cherry1 <- mapply(dens_cherry1, data$width, data$length)
+data$density_pear1 <- mapply(dens_pear1, data$width, data$length)
 
+# lambda calculations
+source("functions/classification functions.R")
+data$lambda <- mapply(calculate_lambda, data$density_cherry, data$density_pear)
+data$classification <- mapply(classify, data$lambda)
+data$lambda1 <- mapply(calculate_lambda, data$density_cherry1, data$density_pear1)
+data$classification1 <- mapply(classify, data$lambda1)
+
+
+# (6) classify new values
+source("functions/predict functions.R")
+u_ <- classify_new(32,82)
+v_ <- classify_new(38,52)
+w_ <- classify_new(40,76)
+
+u_$classification
+v_$classification
+w_$classification
+
+# (7) visualization
+source("functions/plotting functions.R")
+plot <- plot_overall(Sigma, param_cherry, param_pear, data)
+grid_linear <- predict_boundary(linear=TRUE)
+grid_quadratic <- predict_boundary(linear=FALSE)
+plot_linear <- plot_classification(title="Classification Using Equal Covariance", data, equal=TRUE)
+plot_quadratic <- plot_classification(title="Classification Using Unequal Covariance", data, equal=FALSE)
+plot_boundary_linear <- plot_boundary(title="Decision Boundary of Linear", grid_linear)
+plot_boundary_quad <- plot_boundary(title="Decision Boundary of Quadratic", grid_quadratic)
+
+plot
+plot_linear
+plot_quadratic
+plot_boundary_linear
+plot_boundary_quad
