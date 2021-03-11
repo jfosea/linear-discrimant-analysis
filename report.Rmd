@@ -6,6 +6,65 @@ output:
 sansfont: Calibri Light
 ---
 
+```{r, include=FALSE}
+library(mvtnorm)
+library(ggplot2)
+library(gridExtra)
+library(kableExtra)
+# import data and separate by species
+data <- read.csv("data/data1.csv")
+names(data)[1] <- "species"
+cherry_df <- data[which(data$species=="cherry"),2:3]
+pear_df <- data[which(data$species=="pear"),2:3]
+
+
+# method of moments for parameter estimation
+source("functions/estimate params.R")
+param_cherry <- calculate_parameters(cherry_df)
+param_pear <- calculate_parameters(pear_df)
+Sigma <- (param_cherry$Sigma + param_pear$Sigma) / 2
+
+
+# density calculations
+source("functions/density functions.R")
+data$density_cherry <- mapply(dens_cherry, data$width, data$length)
+data$density_pear <- mapply(dens_pear, data$width, data$length)
+data$density_cherry1 <- mapply(dens_cherry1, data$width, data$length)
+data$density_pear1 <- mapply(dens_pear1, data$width, data$length)
+
+# lambda calculations
+source("functions/classification functions.R")
+data$lambda <- mapply(calculate_lambda, data$density_cherry, data$density_pear)
+data$classification <- mapply(classify, data$lambda)
+data$lambda1 <- mapply(calculate_lambda, data$density_cherry1, data$density_pear1)
+data$classification1 <- mapply(classify, data$lambda1)
+
+
+# (6) classify new values
+source("functions/predict functions.R")
+u_ <- classify_new(32,82)
+v_ <- classify_new(38,52)
+w_ <- classify_new(40,76)
+
+u_$classification
+v_$classification
+w_$classification
+
+# (7) visualization
+source("functions/plotting functions.R")
+plot <- plot_data("Plot of Sample", data)
+plot_linear <- plot_classification(title="Classification Using Equal Covariance", data, assumption="linear")
+plot_quadratic <- plot_classification(title="Classification Using Unequal Covariance", data, assumption="quadratic")
+plot_both <- plot_classification(title="Classification Boundaries", data, assumption="both")
+plot_both <- plot_classification(title="Classification Boundaries", data, assumption="both")
+plot_none <- plot_classification(title="First Rule Classification", data, assumption="none")
+# grid_linear <- predict_boundary(linear=TRUE)
+# grid_quadratic <- predict_boundary(linear=FALSE)
+# plot_pred_boundary_linear <- plot_boundary(title="Predicted Decision Boundary of Linear", grid_linear)
+# plot_pred_boundary_quad <- plot_boundary(title="Predicted Decision Boundary of Quadratic", grid_quadratic)
+```
+
+
 \fontsize{11}{15}
 \selectfont
 
@@ -53,7 +112,7 @@ Using width and length measurements taken from cherry and pear tree leaves, our 
 \subsection{\normalsize{\textit{Data Input}}}
 In an Microsoft Excel Sheet (2020), I prepared 3 empty columns with the following headers: species, width, and length.
 
-For each leaf a new row with 3 columns is recorded in the excel sheet that contains the species, width, and length measured according to the procedure outlined below. After recording each value, I saved the data as a csv file named "data.csv". In addition, the full dataset can be found in Appendix A. 
+For each leaf a new row with 3 columns is recorded in the excel sheet that contains the species, width, and length measured according to the procedure outlined below. After recording each value, I saved the data as a csv file named "data.csv". In addition, the full raw data can be found in  A1 in the appendix.
 
 - species: If the leaf is part of figure 7.2, then species contains string input "cherry." If the leaf is part of figure 7.3, then species contains string input "pear."
 - width: Measured the widest part of each leaf using a straight ruler to the closest millimeter
@@ -81,40 +140,341 @@ I used R version 4.0.3 (2020-10-10) (R Core Team (2020)) to perform all my class
 \subsection{\normalsize{\textit{Assumptions}}}
 The first classification rule assumes the following:
 
-1. For each species $k = \text{cherry or pear}$, the distribution of the leaves measurements follow a bivariate normal distribution as follows
+1. For each species $k = \text{cherry or pear}$, the distribution of the width and length measurements follow a bivariate normal distribution as follows
 
-    $$\left(\begin{matrix}X \\ Y \end{matrix} \right) \sim N_2 \left(\mu_{k}, \Sigma \right)$$
+    $$\left(\begin{matrix}X_k \\ Y_k \end{matrix} \right) \sim N_2 \left(\mu_{k}, \Sigma \right)$$
     where 
     
     \begin{align*}
-    X &= \text{ width (mm)} \\
-    Y &= \text{ length (mm)} \\
-    \mu_k &= \left( \begin{matrix}\mu_x \\ \mu_y \end{matrix}\right) \quad \text{ where } k = \text{cherry or pear} \\
+    X_k &= \text{ width (mm) of the $k$ species} \\
+    Y_k &= \text{ length (mm) of the $k$ species} \\
+    \mu_k &= \left( \begin{matrix}\mu_{kx} \\ \mu_{ky} \end{matrix}\right) \text{ of the $k$ species} \\
     \Sigma &= \left(\begin{matrix} \sigma^2_x &\sigma_{xy} \\ \sigma_{xy} &\sigma^2_{y} \end{matrix} \right)
     \end{align*}
     
-    Hence, the density a leaf given the $x$ width and $y$ length of the $k = \text{cherry or pear}$ species is given by
+    Hence, the density of a leaf given the $x$ width and $y$ length according to the $k = \text{cherry or pear}$ species is given by
     
-    $$f_k(x,y) = \frac{1}{2\pi\sqrt{|\Sigma|}} \exp\left[\frac{-1}{2}\ \left(\begin{matrix}x-\mu_x \\ y-\mu_y \end{matrix}\right)^T \Sigma^{-1} \left(\begin{matrix}x-\mu_x \\ y-\mu_y \end{matrix}\right) \right] $$
+    $$f_k(x,y \mid \mu_k, \Sigma) = \frac{1}{2\pi\sqrt{|\Sigma|}} \exp\left[\frac{-1}{2}\ \left(\begin{matrix}x-\mu_{kx} \\ y-\mu_{ky} \end{matrix}\right)^T \Sigma^{-1} \left(\begin{matrix}x-\mu_{kx} \\ y-\mu_{ky} \end{matrix}\right) \right] $$
     
     where $$|\Sigma| = \text{ determinant of the covariance matrix}.$$
 
 2. The covariance matrix $\Sigma$ of the $k = \text{cherry or pear}$ species is the same with possible differences in the mean vectors $\mu_k.$
 
+\newpage
 \subsection{\normalsize{\textit{Parameter Estimation}}}
+
+Given the data collected, for $k = \text{cherry or pear}$, we estimate the unknown parameters $\mu_k$  and $\Sigma$ as $\hat{\mu}_k$ and $\hat{\Sigma}$ by using the method of moments as follows.
+
+$$ \hat{\mu}_k =
+\left(
+\begin{matrix}
+\frac{1}{n_k}\sum_{i=1}^{n_k} x_{ki} \\
+\frac{1}{n_k}\sum_{i=1}^{n_k} y_{ki}
+\end{matrix}
+\right) \quad \text{and} \quad 
+\hat{\Sigma} = \frac{1}{2} \left(\hat{\Sigma}_{\text{cherry}} + \hat{\Sigma}_{\text{pear}} \right)$$
+where
+
+\begin{align*}
+x_{ki} &= \text{ width (mm) of the $i$-th leaf for the $k$-th species} \\
+y_{ki} &= \text{ length (mm) of the $i$-th leaf for the $k$-th species} \\
+n_{k} &= \text{ number of total leaves gathered for the $k$-th species} \\
+\hat{\Sigma}_k &=
+\left(\begin{matrix}
+\frac{1}{n_k}\sum_{i=1}^{n_k} x_{ki}^2 - \left(\frac{1}{n_k}\sum_{i=1}^{n_k} x_{ki} \right) ^2
+&\frac{1}{n_k}\sum_{i=1}^{n_k} x_{ki} y_{ki} - \frac{1}{n_k}\sum_{i=1}^{n_k} x_{ki} \frac{1}{n_k}\sum_{i=1}^{n_k} y_{ki}
+\\
+\frac{1}{n_k}\sum_{i=1}^{n_k} x_{ki} y_{ki} - \frac{1}{n_k}\sum_{i=1}^{n_k} x_{ki} \frac{1}{n_k}\sum_{i=1}^{n_k} y_{ki}
+&\frac{1}{n_k}\sum_{i=1}^{n_k} y_{ki}^2 - \left(\frac{1}{n_k}\sum_{i=1}^{n_k} y_{ki} \right) ^2
+\end{matrix}\right)
+\end{align*}
+
+```{r, echo=FALSE}
+options(digits=2)
+cx = param_cherry$mu[1,1]
+cy = param_cherry$mu[2,1]
+px = param_pear$mu[1,1]
+py = param_pear$mu[2,1]
+```
+
+Using the formulas above and the sample data, the estimated mean and covariance matrix are shown below.
+
+$$\hat{\mu}_{\text{cherry}} = \left(\begin{matrix} `r cx`  \\ `r cy` \end{matrix} \right)$$
+$$\hat{\mu}_{\text{pear}} = \left(\begin{matrix} `r px`  \\ `r py` \end{matrix} \right)$$
+$$\hat{\Sigma} = \left( \begin{matrix}`r Sigma[1,1]` &`r Sigma[1,2]` \\ `r Sigma[1,2]`  & `r Sigma[2,2]`\end{matrix}\right) $$
+Hence using the estimated parameters, the density formula for a given $x$ width and $y$ length for the $k=\text{cherry or pear}$ species is shown below.
+
+\begin{align*}
+f_{\text{cherry}}(x,y \mid \hat{\mu}_{\text{cherry}}, \hat{\Sigma}) &= 
+\frac{1}{2\pi\sqrt{\left| \left( \begin{matrix}`r Sigma[1,1]` &`r Sigma[1,2]` \\ `r Sigma[1,2]`  & `r Sigma[2,2]`\end{matrix}\right) \right|}} 
+\exp\left[\frac{-1}{2} 
+\left(\begin{matrix}
+x-`r cx` \\ 
+y-`r cy`
+\end{matrix}\right)^T 
+\left( \begin{matrix}`r Sigma[1,1]` &`r Sigma[1,2]` \\ `r Sigma[1,2]`  & `r Sigma[2,2]`\end{matrix}\right) ^{-1} 
+\left(\begin{matrix}
+x-`r cx` \\ 
+y-`r cy` 
+\end{matrix}\right) \right] \\
+f_{\text{pear}}(x,y \mid \hat{\mu}_{\text{pear}}, \hat{\Sigma}) &= 
+\frac{1}{2\pi\sqrt{\left| \left( \begin{matrix}`r Sigma[1,1]` &`r Sigma[1,2]` \\ `r Sigma[1,2]`  & `r Sigma[2,2]`\end{matrix}\right) \right|}} 
+\exp\left[\frac{-1}{2} 
+\left(\begin{matrix}
+x-`r px` \\ 
+y-`r py`
+\end{matrix}\right)^T 
+\left( \begin{matrix}`r Sigma[1,1]` &`r Sigma[1,2]` \\ `r Sigma[1,2]`  & `r Sigma[2,2]`\end{matrix}\right) ^{-1} 
+\left(\begin{matrix}
+x-`r px` \\ 
+y-`r py` 
+\end{matrix}\right) \right]
+\end{align*}
+
+
+\subsection{\normalsize{\textit{Classification Rule}}}
+
+Let $n \text{ be the total number of observations in the training data}$, $i$ be any integer from 0 to $n$, and $(x_i, y_i)$ be the $i$-th observation where $x_i$ is the width measurement and $y_i$ is the length measurement. The respective $\lambda$ values for each observation $(x_i, y_i)$ is as follows.
+
+\begin{align*}
+\lambda_i &= \frac{f_{\text{cherry}}(x_i,y_i|\hat{\mu}_{\text{cherry}}, \hat{\Sigma})}{f_{\text{pear}} (x_i,y_i|\hat{\mu}_{\text{pear}}, \hat{\Sigma})}  \\
+&= \frac{\frac{1}{2\pi\sqrt{\left| \left( \begin{matrix}`r Sigma[1,1]` &`r Sigma[1,2]` \\ `r Sigma[1,2]`  & `r Sigma[2,2]`\end{matrix}\right) \right|}} 
+\exp\left[\frac{-1}{2} 
+\left(\begin{matrix}
+x-`r cx` \\ 
+y-`r cy`
+\end{matrix}\right)^T 
+\left( \begin{matrix}`r Sigma[1,1]` &`r Sigma[1,2]` \\ `r Sigma[1,2]`  & `r Sigma[2,2]`\end{matrix}\right) ^{-1} 
+\left(\begin{matrix}
+x-`r cx` \\ 
+y-`r cy` 
+\end{matrix}\right) \right]}{\frac{1}{2\pi\sqrt{\left| \left( \begin{matrix}`r Sigma[1,1]` &`r Sigma[1,2]` \\ `r Sigma[1,2]`  & `r Sigma[2,2]`\end{matrix}\right) \right|}} 
+\exp\left[\frac{-1}{2} 
+\left(\begin{matrix}
+x-`r px` \\ 
+y-`r py`
+\end{matrix}\right)^T 
+\left( \begin{matrix}`r Sigma[1,1]` &`r Sigma[1,2]` \\ `r Sigma[1,2]`  & `r Sigma[2,2]`\end{matrix}\right) ^{-1} 
+\left(\begin{matrix}
+x-`r px` \\ 
+y-`r py` 
+\end{matrix}\right) \right]}
+\end{align*}
+The following classification rule described below is used to determine whether observation $(x_i, y_i)$ belongs to a certain species. The lambda values and classifications of all the observations is recorded in A2 in the appendix. 
+
+- if $\lambda_i > 1$, then observation $(x_i, y_i)$ is a cherry leaf
+- if $\lambda_i < 1$, then observation $(x_i, y_i)$ is a pear leaf
+- if $\lambda_i = 1$, then observation $(x_i, y_i)$ is undetermined
+
+\subsection{\normalsize{\textit{Classification Errors}}}
+
+```{r, echo=FALSE} 
+misclass = length(which(data$species != data$classification))
+```
+
+There is a total of `r misclass` misclassifications. This is evident in table 1 as well as the rey circles and orange triangles in figure 2.
+
+Table 1. Observation Points Where Misclassification Occurs
+```{r, echo=FALSE}
+misdf = data[which(data$species != data$classification),-c(4:8,10,11)]
+kable(misdf, col.names = c('species', 'width (mm)','length (mm)', 'classification'), format = "latex") %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+\newpage
+Figure 1. Scatter Plot of Observation Data
+
+```{r, echo=FALSE, fig.height = 4, fig.width = 6}
+plot
+```
+
+
+Figure 2. Scatter Plot of First Classification Rule
+
+```{r, echo=FALSE, fig.height = 4, fig.width = 6}
+plot_none
+```
+
+\newpage
+\subsection{\normalsize{\textit{New Classification}}}
+
+Using the classification rules outlined above, we are tasked to classify new leaves with the following meassurements
+
+```{r, echo=FALSE}
+new = data.frame(id=c('u', 'v', 'w'), width=c(32,38,52), length=c(82,52,76))
+kable(new, col.names = c('id', 'width (mm)','length (mm)'), format = "latex") %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+We calculate $\lambda$ using the formula stated above and get the following resuts
+
+```{r, echo=FALSE}
+new1 = data.frame(id=c('u', 'v', 'w'),
+lambda=c(u_$lambda, v_$lambda, w_$lambda),
+classification=c(u_$classification, v_$classification, w_$classification))
+
+kable(new1, col.names = c('id', 'lamda', 'classification'), format = "latex") %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+
+\subsection{\normalsize{\textit{Decision Boundary}}}
+Using the derivation of the decision boundary found in A4 in the appendix, the decision boundary for the given in the formula below.
+
+
+```{r, echo=FALSE}
+Sigma_inv <- solve(Sigma)
+p = (param_cherry$mu - param_pear$mu)[1]
+q = (param_cherry$mu - param_pear$mu)[2]
+m = Sigma_inv[1,1]
+n = Sigma_inv[1,2]
+o = Sigma_inv[2,2]
+c = 0.5*((t(param_cherry$mu) %*% Sigma_inv %*% param_cherry$mu)  - (t(param_pear$mu) %*% Sigma_inv %*% param_pear$mu))
+constant = c/(p*n+q*o)
+slope = -(p*m+q*n)/(p*n+q*o)
+```
+
+$$y = `r slope`x `r constant` $$
+
+Figure 3. Scatter Plot with Decision Boundary
+
+```{r, echo=FALSE, fig.height = 4, fig.width = 6, warning=FALSE}
+plot_linear
+```
+
+Furthermore, I predicted all the possible points in the observation space to the closest 0.1 mm using the first classification rules and got the following results in the plot below. From figure 4, it is clear that the decision boundary is a linear equation that divides the observation space into 2 distinct regions. 
+
+Figure 4. Grid Plot of a Predicted Points in the Observation Space
 
 
 \newpage
 \section{Second Classification}
 
+\subsection{\normalsize{\textit{Assumptions}}}
+
+The assumptions are similar to the first classification. However, the only difference is that the covariance matrices are no longer equal. Instead, for each species $k$ = cherry or pear, the distribution of the width and length measurements follow a bivariate normal as follows
+
+$$\left(\begin{matrix}X_k \\ Y_k \end{matrix} \right) \sim N_2 \left(\mu_{k}, \Sigma_k \right)$$
+where 
+
+  \begin{align*}
+  \Sigma_k &= \left(\begin{matrix} \sigma^2_{kx} &\sigma_{kxy} \\ \sigma_{kxy} &\sigma^2_{ky} \end{matrix} \right) \text{ covariance matrix of the $k$ species}
+  \end{align*}
+  
+  
+  Hence, the density of a leaf given the $x$ width and $y$ length according to the $k = \text{cherry or pear}$ species is given by
+  
+  $$f_k(x,y \mid \mu_k, \Sigma) = \frac{1}{2\pi\sqrt{|\Sigma_k|}} \exp\left[\frac{-1}{2}\ \left(\begin{matrix}x-\mu_{kx} \\ y-\mu_{ky} \end{matrix}\right)^T \Sigma^{-1}_k \left(\begin{matrix}x-\mu_{kx} \\ y-\mu_{ky} \end{matrix}\right) \right] $$
+  
+  where $$|\Sigma_k| = \text{ determinant of the $k$ species covariance matrix}.$$
+
+\subsection{\normalsize{\textit{Parameter Estimation}}}
+
+For $k$ = cherry or pear, $\hat{\mu}_k$ is the same as derived in the first classification. $\hat{\Sigma}_{k}$ is no longer the pooled covariance matrix. For each $k$ = cherry or pear the estimation of $\hat{\Sigma}_k$ is the method of moments covariance matrix. The derivation of this can be found in the first classification parameter estimation. 
+
+$$\hat{\Sigma}_{\text{cherry}} = \left( \begin{matrix}`r param_cherry$Sigma[1,1]` &`r param_cherry$Sigma[1,2]` \\ `r param_cherry$Sigma[1,2]`  & `r param_cherry$Sigma[2,2]`\end{matrix}\right) $$
+
+$$\hat{\Sigma}_{\text{pear}} = \left( \begin{matrix}`r param_pear$Sigma[1,1]` &`r param_pear$Sigma[1,2]` \\ `r param_pear$Sigma[1,2]`  & `r param_pear$Sigma[2,2]`\end{matrix}\right) $$
+Hence using the estimated parameters, the density formula for a given $x$ width and $y$ length for the $k=\text{cherry or pear}$ species is shown below.
+
+\begin{align*}
+f_{\text{cherry}}(x,y \mid \hat{\mu}_{\text{cherry}}, \hat{\Sigma}_{\text{cherry}}) &= 
+\frac{1}{2\pi\sqrt{\left| \left( \begin{matrix}`r param_cherry$Sigma[1,1]` &`r param_cherry$Sigma[1,2]` \\ `r param_cherry$Sigma[1,2]`  & `r param_cherry$Sigma[2,2]`\end{matrix}\right) \right|}} 
+\exp\left[\frac{-1}{2} 
+\left(\begin{matrix}
+x-`r cx` \\ 
+y-`r cy`
+\end{matrix}\right)^T 
+\left( \begin{matrix}`r param_cherry$Sigma[1,1]` &`r param_cherry$Sigma[1,2]` \\ `r param_cherry$Sigma[1,2]`  & `r param_cherry$Sigma[2,2]`\end{matrix}\right) ^{-1} 
+\left(\begin{matrix}
+x-`r cx` \\ 
+y-`r cy` 
+\end{matrix}\right) \right] \\
+f_{\text{pear}}(x,y \mid \hat{\mu}_{\text{pear}}, \hat{\Sigma}_{\text{pear}}) &= 
+\frac{1}{2\pi\sqrt{\left| \left( \begin{matrix}`r param_pear$Sigma[1,1]` &`r param_pear$Sigma[1,2]` \\ `r param_pear$Sigma[1,2]`  & `r param_pear$Sigma[2,2]`\end{matrix}\right) \right|}} 
+\exp\left[\frac{-1}{2} 
+\left(\begin{matrix}
+x-`r px` \\ 
+y-`r py`
+\end{matrix}\right)^T 
+\left( \begin{matrix}`r param_pear$Sigma[1,1]` &`r param_pear$Sigma[1,2]` \\ `r param_pear$Sigma[1,2]`  & `r param_pear$Sigma[2,2]`\end{matrix}\right) ^{-1} 
+\left(\begin{matrix}
+x-`r px` \\ 
+y-`r py` 
+\end{matrix}\right) \right]
+\end{align*}
+
+\subsection{\normalsize{\textit{Classification Rule}}}
+
+Similar to the first classification rule, we use the same cutoff $\lambda$ value and test cases. However, each corresponding $\lambda_i$ is now calculated as follows.
+
+\begin{align*}
+\lambda_i &= \frac{f_{\text{cherry}}(x_i,y_i|\hat{\mu}_{\text{cherry}}, \hat{\Sigma}_{\text{cherry}})}{f_{\text{pear}} (x_i,y_i|\hat{\mu}_{\text{pear}}, \hat{\Sigma}_{\text{pear}})}  \\
+&= \frac{\frac{1}{2\pi\sqrt{\left| \left( \begin{matrix}`r param_cherry$Sigma[1,1]` &`r param_cherry$Sigma[1,2]` \\ `r param_cherry$Sigma[1,2]`  & `r param_cherry$Sigma[2,2]`\end{matrix}\right) \right|}} 
+\exp\left[\frac{-1}{2} 
+\left(\begin{matrix}
+x-`r cx` \\ 
+y-`r cy`
+\end{matrix}\right)^T 
+\left( \begin{matrix}`r param_cherry$Sigma[1,1]` &`r param_cherry$Sigma[1,2]` \\ `r param_cherry$Sigma[1,2]`  & `r param_cherry$Sigma[2,2]`\end{matrix}\right) ^{-1} 
+\left(\begin{matrix}
+x-`r cx` \\ 
+y-`r cy` 
+\end{matrix}\right) \right]}{\frac{1}{2\pi\sqrt{\left| \left( \begin{matrix}`r param_pear$Sigma[1,1]` &`r param_pear$Sigma[1,2]` \\ `r param_pear$Sigma[1,2]`  & `r param_pear$Sigma[2,2]`\end{matrix}\right) \right|}} 
+\exp\left[\frac{-1}{2} 
+\left(\begin{matrix}
+x-`r px` \\ 
+y-`r py`
+\end{matrix}\right)^T 
+\left( \begin{matrix}`r param_pear$Sigma[1,1]` &`r param_pear$Sigma[1,2]` \\ `r param_pear$Sigma[1,2]`  & `r param_pear$Sigma[2,2]`\end{matrix}\right) ^{-1} 
+\left(\begin{matrix}
+x-`r px` \\ 
+y-`r py` 
+\end{matrix}\right) \right]}
+\end{align*}
+
+\subsection{\normalsize{\textit{Decision Boundary}}}
+Using the derivation in A5 in the appendix, the decision boundary for the given classification is the function below
+
+```{r, echo=FALSE}
+options(digits=5)
+sigA_inv = solve(param_cherry$Sigma)
+sigB_inv = solve(param_pear$Sigma)
+m = (sigA_inv - sigB_inv)[1,1]
+n = (sigA_inv - sigB_inv)[1,2]
+o = (sigA_inv - sigB_inv)[2,2]
+
+p = as.numeric((-2*(sigA_inv %*% param_cherry$mu - sigB_inv %*% param_pear$mu))[1,1])
+q = as.numeric((-2*(sigA_inv %*% param_cherry$mu - sigB_inv %*% param_pear$mu))[2,1])
+
+f1 = 2*(log(sqrt(det(param_cherry$Sigma)/det(param_pear$Sigma))))
+f2 = as.numeric(t(param_cherry$mu) %*% sigA_inv %*% param_cherry$mu) - as.numeric(t(param_pear$mu) %*% sigB_inv %*% param_pear$mu)
+c = f1 + f2
+
+x = 1
+
+A = o
+B = (2*n*x+q)
+C = (m*x^2 + x*p + c)
+```
+
+$$y = \frac{1}{2*A} -{B} - \sqrt{B^2 - 4AC}$$
+where
+
+$$
+A = `r o` \\
+B= `r 2*n` x + `r q` \\
+C = `r m` x^2 + `r p` x + `r c`
+$$
+
 \newpage
-\section{{Conclusion}}
+\section{Conclusion}
 
 
 
 
 \newpage
-\section{{References}}
+\section{References}
 
 -  R Core Team (2020). R: A language and environment
   for statistical computing. R Foundation for
@@ -137,11 +497,168 @@ The first classification rule assumes the following:
   Heidelberg. ISBN 978-3-642-01688-2
   
 \newpage
-\section{Appendix A}
+\section{Appendix}
+\textbf{A1. Data Table with Density Calculations}
+```{r, echo=FALSE}
+options(digits = 2)
+data.frame(species=data$species, width=data$width, length=data$length)
+```
 
-\textbf{Full Data Table}
-        ```{r, echo=FALSE}
-        data <- read.csv("data/data1.csv")
-        names(data)[1] <- "species"
-        data
-        ```
+\newpage
+\textbf{A2. Densities, Lambda Calculations and First Rule Classification}
+```{r, echo=FALSE, size="huge"}
+data.frame(species=data$species, "f cherry 1"=data$density_cherry, "f pear 1"=data$density_pear, "l 1" = data$lambda, "c 1"= data$classification)
+```
+
+where
+\begin{align*}
+\texttt{f.k.1} &= \text{$f_k(x,y|\hat{\mu}_{k}, \hat{\Sigma})$ of the $k$ species} \\ 
+\texttt{l.1} &= \text{$\lambda = \frac{f_{\text{cherry}}(x,y|\hat{\mu}_{\text{cherry}}, \hat{\Sigma})}{f_{\text{pear}} (x,y|\hat{\mu}_{\text{pear}}, \hat{\Sigma})}$ calculation} \\
+\texttt{c.1} &= \text{"cherry" or "pear" depending on the first classification rule} \\
+\end{align*}
+
+\newpage
+\textbf{A3. Densities, Lambda Calculations and Second Rule Classification}
+```{r, echo=FALSE}
+data.frame(species=data$species, "f cherry 2"=data$density_cherry1, "f pear 2"=data$density_pear1, "l 2" = data$lambda1, "c 2"= data$classification1)
+```
+
+where
+\begin{align*}
+\texttt{f.k.2} &= \text{$f_k(x,y|\hat{\mu}_{k}, \hat{\Sigma}_{k})$ of the $k$ species} \\
+\texttt{l.2} &= \text{$\lambda = \frac{f_{\text{cherry}}(x,y|\hat{\mu}_{\text{cherry}}, \hat{\Sigma}_{\text{cherry}})}{f_{\text{pear}} (x,y|\hat{\mu}_{\text{pear}}, \hat{\Sigma}_{\text{pear}})}$ calculation} \\
+\texttt{c.2} &= \text{"cherry" or "pear" depending on the second classification rule} \\
+\end{align*}
+
+\newpage
+\textbf{A4. Calculating Decision Boundary for First Classification}
+
+The decision boundary is the equation $y = f(x)$ such that $\lambda=1$. In order to have cleaner derivation, let $a = \left( \begin{matrix}x \\y  \end{matrix}\right)$. We calculate the decision boundary by the following
+
+\begin{align*}
+\lambda &= \frac{f_{\text{cherry}}(x_i,y_i|\hat{\mu}_{\text{cherry}}, \hat{\Sigma})}{f_{\text{pear}} (x_i,y_i|\hat{\mu}_{\text{pear}}, \hat{\Sigma})} \\
+&= \frac{\frac{1}{2\pi\sqrt{|\hat{\Sigma}_{\text{}}|}} \exp\left\{-\frac12(a - \hat{\mu}_{cherry})^T \hat{\Sigma}_{\text{}}^{-1} (a - \hat{\mu}_{cherry}) \right \}}
+{\frac{1}{2\pi\sqrt{|\hat{\Sigma}_{\text{}}|}} \exp\left\{-\frac12 (a - \hat{\mu}_{pear})^T \hat{\Sigma}_{\text{}}^{-1} (a - \hat{\mu}_{pear}) \right \}} \\
+&= \exp \left\{ 
+-\frac12 
+\left(
+(a - \hat{\mu}_{cherry})^T 
+\hat{\Sigma}_{\text{}}^{-1}
+(a - \hat{\mu}_{cherry}) - 
+(a - \hat{\mu}_{pear})^T 
+\hat{\Sigma}_{\text{}}^{-1} 
+(a - \hat{\mu}_{pear})
+\right)
+\right\} 
+\end{align*}
+
+Since, the cutoff value is at $\lambda=1$, we set the $\lambda$ equal to 1 and simplify.
+
+\begin{align*}
+1 &= \exp \left\{ 
+-\frac12 
+\left(
+(a - \hat{\mu}_{cherry})^T 
+\hat{\Sigma}_{\text{}}^{-1}
+(a - \hat{\mu}_{cherry}) - 
+(a - \hat{\mu}_{pear})^T 
+\hat{\Sigma}_{\text{}}^{-1} 
+(a - \hat{\mu}_{pear})
+\right)
+\right\} 
+\\ 
+\implies \log (1) 
+&= log( \exp \left\{ 
+-\frac12 
+\left(
+(a - \hat{\mu}_{cherry})^T 
+\hat{\Sigma}_{\text{}}^{-1}
+(a - \hat{\mu}_{cherry}) - 
+(a - \hat{\mu}_{pear})^T 
+\hat{\Sigma}_{\text{}}^{-1} 
+(a - \hat{\mu}_{pear})
+\right)
+\right\}) 
+\\
+\implies 0
+&=-\frac12 
+\left(
+(a - \hat{\mu}_{cherry})^T 
+\hat{\Sigma}_{\text{}}^{-1}
+(a - \hat{\mu}_{cherry}) - 
+(a - \hat{\mu}_{pear})^T 
+\hat{\Sigma}_{\text{}}^{-1} 
+(a - \hat{\mu}_{pear})
+\right) 
+\end{align*}
+
+Since $\log (1) = 0$, we get the following equality
+
+\begin{align*}
+&(a - \hat{\mu}_{cherry})^T 
+\hat{\Sigma}_{\text{}}
+(a - \hat{\mu}_{cherry}) = (a - \hat{\mu}_{pear})^T 
+\hat{\Sigma}_{\text{pear}}^{-1} 
+(a - \hat{\mu}_{pear}) 
+\\
+\implies 0 &= (a - \hat{\mu}_{cherry})^T 
+\hat{\Sigma}_{\text{}}^{-1}
+(a - \hat{\mu}_{cherry}) - (a - \hat{\mu}_{pear})^T 
+\hat{\Sigma}_{\text{pear}}^{-1} 
+(a - \hat{\mu}_{pear}) 
+\\
+0 &=a^T\hat{\Sigma}_{\text{}}^{-1}a 
++ 2a^T
+\hat{\Sigma}^{-1}
+\hat{\mu}_{cherry}
+- \hat{\mu}_{cherry}^T
+\hat{\Sigma}^{-1}
+\hat{\mu}_{cherry}
+- a^T
+\hat{\Sigma}_{\text{}}^{-1}
+a 
+- 2a^T
+\hat{\Sigma}^{-1}
+\hat{\mu}_{pear} 
++ \hat{\mu}_{pear}^T
+\hat{\Sigma}^{-1}
+\hat{\mu}_{pear}
+\\
+0 &= a^T 
+\underbrace{
+2\hat{\Sigma}^{-1}}_{A} 
+\underbrace{
+(\hat{\mu}_{cherry} - \hat{\mu}_{pear})}_{B}
+- \underbrace{(\hat{\mu}_{cherry}^T
+\hat{\Sigma}^{-1}
+\hat{\mu}_{cherry}
+- \hat{\mu}_{pear}^T
+\hat{\Sigma}
+\hat{\mu}_{pear})}_{C} 
+\end{align*}
+
+Since, $A$ is a $2\times 2$ matrix, $B$ is $2\times 1$ and $C$ is a constant then we can express the equality in terms of $x$ and $y$ then solve for $y$.
+\begin{align*}
+0 &=
+a^TAB - C \\
+&= 
+\left(
+\begin{matrix}
+x &y
+\end{matrix}
+\right)
+\left(
+\begin{matrix}
+m &n \\ n &o
+\end{matrix}
+\right)
+\left(
+\begin{matrix}
+p \\q
+\end{matrix}
+\right) - c \\
+&= q(mx + oy) + r(nx + py) - c \\
+\implies y &= -\frac{qm+rn}{qo+rp}x + \frac{c}{qo+rp} \\
+y&= f(x) \text{ is the decision boundary where $\lambda=1$ as desired.}
+\end{align*}
+

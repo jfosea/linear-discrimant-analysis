@@ -10,5 +10,5 @@ calculate_parameters <- function(df) {
                     sigma_xy, sigma_x_y[2,1]),
                   ncol = 2, nrow = 2)
   return(list("mu" = mu1, "Sigma"= Sigma))
-  
+ 
 }

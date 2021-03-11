@@ -49,15 +49,23 @@ w_$classification
 # (7) visualization
 source("functions/plotting functions.R")
 plot <- plot_overall(Sigma, param_cherry, param_pear, data)
-grid_linear <- predict_boundary(linear=TRUE)
-grid_quadratic <- predict_boundary(linear=FALSE)
-plot_linear <- plot_classification(title="Classification Using Equal Covariance", data, equal=TRUE)
-plot_quadratic <- plot_classification(title="Classification Using Unequal Covariance", data, equal=FALSE)
-plot_boundary_linear <- plot_boundary(title="Decision Boundary of Linear", grid_linear)
-plot_boundary_quad <- plot_boundary(title="Decision Boundary of Quadratic", grid_quadratic)
+plot <- plot_data("Plot of Sample", data)
+plot_linear <- plot_classification(title="Classification Using Equal Covariance", data, assumption="linear")
+plot_quadratic <- plot_classification(title="Classification Using Unequal Covariance", data, assumption="quadratic")
+plot_both <- plot_classification(title="Classification Boundaries", data, assumption="both")
+plot_none <- plot_classification(title="First Rule Classification", data, assumption="none")
+# grid_linear <- predict_boundary(linear=TRUE)
+# grid_quadratic <- predict_boundary(linear=FALSE)
+# plot_pred_boundary_linear <- plot_boundary(title="Predicted Decision Boundary of Linear", grid_linear)
+# plot_pred_boundary_quad <- plot_boundary(title="Predicted Decision Boundary of Quadratic", grid_quadratic)
 
 plot
-plot_linear
+plot_linear 
 plot_quadratic
-plot_boundary_linear
-plot_boundary_quad
+plot_both
+plot_pred_boundary_linear
+plot_pred_boundary_quad
+
+
+
+
