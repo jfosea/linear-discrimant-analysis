@@ -1,31 +1,147 @@
 ---
-title: "report"
-author: "Jana Osea"
-date: "March 4, 2021"
-output: p
-df_document
+geometry: margin=2.54cm
+output:
+  pdf_document:
+    latex_engine: xelatex
+sansfont: Calibri Light
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+\fontsize{11}{15}
+\selectfont
 
-## R Markdown
+\begin{titlepage}
+  \vspace*{\fill}
+  \begin{center}
+    \LARGE{\textbf{Creating Classification Rules to Distinguish Between Cherry Tree and Pear Tree Leaves}}\\[3.5 cm]
+    \large{Presented to Dr. Steven Vamosi}\\[0.5cm]
+    \large{Professor of Ecology and Evolutionary Biology} \\[0.5cm]
+    \large{University of Calgary} \\[3.5cm]
+    \large{Prepared by Jana Osea} \\[0.5cm]
+    \large{Undergraduate Student in Statistics}\\[0.5cm]
+    \large{University of Calgary}\\[3.5cm]
+    \large{March 14, 2021}
+  \end{center}
+  \vspace*{\fill}
+\end{titlepage}
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+\tableofcontents
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+\newpage
+\section{{Summary}}
 
-```{r cars}
-summary(cars)
-```
 
-## Including Plots
+\newpage
+\section{{Introduction}}
+In many fields of study, classifying items or individuals as belonging to one of two or more population or groups is an integral part of analysis. In many cases, it is often the goal of a research or study to classify each sample item correctly. In fields like finance and medical research, correctly classifying items can imply stopping transaction fraud or discovering deadly tumors. Hence, it is important to understand how classification procedures work.
 
-You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+\subsection{\normalsize{\textit{Background}}}
+As the importance of classification is becoming more evident, Professor Steven Vamosi, a Doctor in Ecology and Evolutionary Biology has entrusted an undergraduate student in Statistics at the University of Calgary, Jana Osea, with the task to develop a classification rule to distinguish between cherry and pear tree leaves. This allows Dr. Vamosi a simple method to classify between the two species and for us demonstrate our knowledge of classification.
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+\subsection{\normalsize{\textit{Goal}}}
+Using width and length measurements taken from cherry and pear tree leaves, our \textit{goal} is to create a classification method to distinguish between the two species.
+
+
+\newpage
+\section{Data Generation Process}
+
+\subsection{\normalsize{\textit{Data Source}}}
+
+- Cherry leaves: Figure 7.2 of the pdf file printed on a standard A4 paper
+- Pear leaves: Figure 7.3 of the pdf file printed on a standard A4 paper
+
+\subsection{\normalsize{\textit{Data Input}}}
+In an Microsoft Excel Sheet (2020), I prepared 3 empty columns with the following headers: species, width, and length.
+
+For each leaf a new row with 3 columns is recorded in the excel sheet that contains the species, width, and length measured according to the procedure outlined below. After recording each value, I saved the data as a csv file named "data.csv". In addition, the full dataset can be found in Appendix A. 
+
+- species: If the leaf is part of figure 7.2, then species contains string input "cherry." If the leaf is part of figure 7.3, then species contains string input "pear."
+- width: Measured the widest part of each leaf using a straight ruler to the closest millimeter
+- length: Measured from the bottom tip to the top tip using a straight ruler of each leaf to the closest millimeter
+
+
+\subsection{\normalsize{\textit{Methods}}}
+
+\textit{Overview of Methods}
+
+After inputting the entire data set, I imported the csv file into my program. I made 2 classifications: (1) with equal variance assumption and (2) with no equal variance assumption. Densities and lambda values were calculated for each leaf and visualizations of classifcations were made. 3 new leaf measurements were provided and classified according to the first classification. In addition, misclassifications of each method were recorded.
+
+\textit{Software and Packages}
+
+I used R version 4.0.3 (2020-10-10) (R Core Team (2020)) to perform all my classification programming. I also used the following R package to help me visualize and aid my density calculations
+
+- ggplot2 (H. Wickham (2016))
+- gridarrange (Baptiste Auguie (2017))
+- mtvnorm (Alan Genz, et. al (2020))
+
+
+\newpage
+\section{First Classification}
+
+\subsection{\normalsize{\textit{Assumptions}}}
+The first classification rule assumes the following:
+
+1. For each species $k = \text{cherry or pear}$, the distribution of the leaves measurements follow a bivariate normal distribution as follows
+
+    $$\left(\begin{matrix}X \\ Y \end{matrix} \right) \sim N_2 \left(\mu_{k}, \Sigma \right)$$
+    where 
+    
+    \begin{align*}
+    X &= \text{ width (mm)} \\
+    Y &= \text{ length (mm)} \\
+    \mu_k &= \left( \begin{matrix}\mu_x \\ \mu_y \end{matrix}\right) \quad \text{ where } k = \text{cherry or pear} \\
+    \Sigma &= \left(\begin{matrix} \sigma^2_x &\sigma_{xy} \\ \sigma_{xy} &\sigma^2_{y} \end{matrix} \right)
+    \end{align*}
+    
+    Hence, the density a leaf given the $x$ width and $y$ length of the $k = \text{cherry or pear}$ species is given by
+    
+    $$f_k(x,y) = \frac{1}{2\pi\sqrt{|\Sigma|}} \exp\left[\frac{-1}{2}\ \left(\begin{matrix}x-\mu_x \\ y-\mu_y \end{matrix}\right)^T \Sigma^{-1} \left(\begin{matrix}x-\mu_x \\ y-\mu_y \end{matrix}\right) \right] $$
+    
+    where $$|\Sigma| = \text{ determinant of the covariance matrix}.$$
+
+2. The covariance matrix $\Sigma$ of the $k = \text{cherry or pear}$ species is the same with possible differences in the mean vectors $\mu_k.$
+
+\subsection{\normalsize{\textit{Parameter Estimation}}}
+
+
+\newpage
+\section{Second Classification}
+
+\newpage
+\section{{Conclusion}}
+
+
+
+
+\newpage
+\section{{References}}
+
+-  R Core Team (2020). R: A language and environment
+  for statistical computing. R Foundation for
+  Statistical Computing, Vienna, Austria. URL
+  https://www.R-project.org./
+  
+- H. Wickham (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York, 2016.
+
+- Baptiste Auguie (2017). gridExtra: Miscellaneous Functions for "Grid"
+  Graphics. R package version 2.3.
+  https://CRAN.R-project.org/package=gridExtra
+  
+- Alan Genz, Frank Bretz, Tetsuhisa Miwa, Xuefei Mi, Friedrich Leisch, Fabian
+  Scheipl, Torsten Hothorn (2020). mvtnorm: Multivariate Normal and t
+  Distributions. R package version 1.1-1. URL
+  http://CRAN.R-project.org/package=mvtnorm
+
+- Alan Genz, Frank Bretz (2009), Computation of Multivariate Normal and t
+  Probabilities. Lecture Notes in Statistics, Vol. 195., Springer-Verlag,
+  Heidelberg. ISBN 978-3-642-01688-2
+  
+\newpage
+\section{Appendix A}
+
+\textbf{Full Data Table}
+        ```{r, echo=FALSE}
+        data <- read.csv("data/data1.csv")
+        names(data)[1] <- "species"
+        data
+        ```
