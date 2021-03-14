@@ -42,9 +42,9 @@ u_ <- classify_new(32,82)
 v_ <- classify_new(38,52)
 w_ <- classify_new(40,76)
 
-u_$classification
-v_$classification
-w_$classification
+u1_ <- classify_new_second(32,82)
+v1_ <- classify_new_second(38,52)
+w1_ <- classify_new_second(40,76)
 
 # (7) visualization
 source("functions/plotting functions.R")

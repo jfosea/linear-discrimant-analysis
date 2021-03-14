@@ -8,3 +8,11 @@ classify_new <- function(x,y) {
               "lambda" = lambda,
               "classification" = classification))
 }
+
+classify_new_second <- function(x,y) {
+  density_cherry <- dens_cherry1(x,y)
+  density_pear <-dens_pear1(x,y)
+  lambda <- calculate_lambda(density_cherry, density_pear)
+  classification <- classify(lambda)
+  return(list(classification=classification, lambda=lambda))
+}

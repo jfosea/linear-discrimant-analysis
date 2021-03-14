@@ -46,9 +46,10 @@ u_ <- classify_new(32,82)
 v_ <- classify_new(38,52)
 w_ <- classify_new(40,76)
 
-u_$classification
-v_$classification
-w_$classification
+u1_ <- classify_new_second(32,82)
+v1_ <- classify_new_second(38,52)
+w1_ <- classify_new_second(40,76)
+
 
 # (7) visualization
 source("functions/plotting functions.R")
@@ -58,10 +59,10 @@ plot_quadratic <- plot_classification(title="Classification Using Unequal Covari
 plot_both <- plot_classification(title="Classification Boundaries", data, assumption="both")
 plot_both <- plot_classification(title="Classification Boundaries", data, assumption="both")
 plot_none <- plot_classification(title="First Rule Classification", data, assumption="none")
-# grid_linear <- predict_boundary(linear=TRUE)
-# grid_quadratic <- predict_boundary(linear=FALSE)
-# plot_pred_boundary_linear <- plot_boundary(title="Predicted Decision Boundary of Linear", grid_linear)
-# plot_pred_boundary_quad <- plot_boundary(title="Predicted Decision Boundary of Quadratic", grid_quadratic)
+grid_linear <- predict_boundary(linear=TRUE)
+grid_quadratic <- predict_boundary(linear=FALSE)
+plot_pred_boundary_linear <- plot_boundary(title="Predicted Decision Boundary of Linear", grid_linear)
+plot_pred_boundary_quad <- plot_boundary(title="Predicted Decision Boundary of Quadratic", grid_quadratic)
 ```
 
 
@@ -87,7 +88,15 @@ plot_none <- plot_classification(title="First Rule Classification", data, assump
 
 \newpage
 \section{{Summary}}
+As requested by Dr. Steven Vamosi, I have prepared a report on developing a classification system to distinguish between cherry and pear tree leaves. Properly classifying items as a part of a group is becoming increasingly important.
 
+In order to generate the data for the classification systems, a supplied pdf that contains 16 leaves from both cherry and pear trees were printed out on A4 paper. Each leaf was measured according to its width and length using a straight ruler to the closest millimeter. 
+
+Once the data was recorded, 2 classification systems were implemented and analyzed. The first classification system assumed that the width and length of each species of leaves followed a bivariate normal distribution in which both species had a pooled covariance matrix. The second classification system assumed that the width and length of each species of leaves followed a bivariate normal distribution with their own respective covariance matrix.
+
+The findings from the results show that the decision boundary of the first classification system followed a linear equation while the second classification system followed a quadratice linear equation. It was also shown that the number of parameters that were estimated increased from the first to the second classifcation rule. Both rules appeared to have the same misclassifications. However, the second classification rule had on average lower lambda values compared to the first. 
+
+Overall, I suggest using the second classification rule as it better fits the data.
 
 \newpage
 \section{{Introduction}}
@@ -345,7 +354,9 @@ plot_linear
 Furthermore, I predicted all the possible points in the observation space to the closest 0.1 mm using the first classification rules and got the following results in the plot below. From figure 4, it is clear that the decision boundary is a linear equation that divides the observation space into 2 distinct regions. 
 
 Figure 4. Grid Plot of a Predicted Points in the Observation Space
-
+```{r, echo=FALSE}
+plot_pred_boundary_linear
+```
 
 \newpage
 \section{Second Classification}
@@ -432,6 +443,23 @@ y-`r py`
 \end{matrix}\right) \right]}
 \end{align*}
 
+
+\subsection{\normalsize{\textit{Classification Errors}}}
+Similar to the previous classification rule, there are also 4 missclassifications in the data. These are the same exact misclassifications of the previous rule. See figure 1 and 2.
+
+\subsection{\normalsize{\textit{New  Classification}}}
+
+Using the classification rules outlined above, we classify the same new values as found in the first classification rule. The results of the new classification compared to the first classification are shown below.
+
+```{r, echo=FALSE}
+new = data.frame(id=c('u', 'v', 'w'), width=c(32,38,52), length=c(82,52,76), lambda=c(u_$lambda, v_$lambda, w_$lambda), classification=c(u_$classification, v_$classification, w_$classification),  lambda1= c(u1_$lambda, v1_$lambda, w1_$lambda), classification2 = c(u1_$classification, v1_$classification, w1_$classification))
+kable(new, col.names = c('id', 'width (mm)','length (mm)', 'lamda', 'classification', 'lambda', 'classification'), format = "latex") %>%
+  kable_styling(full_width = FALSE, position = "center") %>%
+  add_header_above(c(" " = 3, "First Rule" = 2, "Second Rule" = 2))
+```
+
+The results show that the classifications of the same $u, v, w$ points are the same. However, notice that the lambda values for the second classification are not as high expecially for $u$. 
+
 \subsection{\normalsize{\textit{Decision Boundary}}}
 Using the derivation in A5 in the appendix, the decision boundary for the given classification is the function below
 
@@ -479,21 +507,27 @@ Furthermore, similar to the decision boundary in the first classification, I pre
 Figure 6. Grid Plot of Predicted Points in the Observation Space
 
 ```{r, echo=FALSE}
+plot_pred_boundary_quad
 ```
 
-In addition, when we compare the two different classifications, we observe that the decision boundary between the two are different. The first classification has a decision boundary that is linear and the second classification has a decision boundary that is quadratic. We can observe the difference in the figure 7 below.
+In addition, when we compare the two different classifications, we observe that the decision boundary between the two are different. The first classification has a decision boundary that is linear and the second classification has a decision boundary that is quadratic. We can observe the difference in the figure 7 below. 
 
 Figure 7. Decision Boundary Comparison
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, warning=FALSE}
 plot_both
 ```
 
 
+Notice that getting rid of the assumption of equal covariance between the two species allows for the decision boundary to cater to the shape of the data. For example, if we look at the length of the cherry species in figure 7, we notice that the quadratic decision boundary is lowercompared to the linear quadratic boundary in order to have more allowance to correctly classify lower lengths as cherry leaves.
+
 \newpage
-\section{Conclusion}
+\section{Conclusion and Recommendations}
+\subsection{\normalsize{\textit{Conclusion}}}
+In this report, we created a data generation protocol of measuring the width and length of 2 different species of leaves (cherry and pear). Then we developed 2 classification rules and performed them on the data. The findings in the results show that the difference between the the two classifications is the decision boundary equation. This means that the shape of the decision boundary is determined by whether or not we assume equal covariance between the two species (ie. same covariance of leaf width and length between pear and cherry). Assuming equal covariance results in a linear decision boundary and assuming non-equal covariance results in a quadratic decision boundary. The number of parameters we estimate also changes depending on the equal covariance assumption. If we assume equal covaraince, the number of parameters we estimate is 8 ($\mu_{k}$ for $k$= cherry or pear and $\Sigma$) and if we do not assume equal covariance, the number of parameters we estimate is 12 ($\mu_{k}$, and $\Sigma_k$ for $k$= cherry or pear). 
 
-
+\subsection{\normalsize{\textit{Recommendations}}}
+I recommend using the second classification rule when determining which species a leaf belongs to. Even though there are more parameters to estimate compared to the first classification rule, the decision boundary is more catered to the shape of the data and so will yield more accurate results.
 
 
 \newpage
@@ -591,7 +625,7 @@ Since, the cutoff value is at $\lambda=1$, we set the $\lambda$ equal to 1 and s
 \right\} 
 \\ 
 \implies \log (1) 
-&= log( \exp \left\{ 
+&= log\left( \exp \left\{ 
 -\frac12 
 \left(
 (a - \hat{\mu}_{cherry})^T 
@@ -601,7 +635,7 @@ Since, the cutoff value is at $\lambda=1$, we set the $\lambda$ equal to 1 and s
 \hat{\Sigma}_{\text{}}^{-1} 
 (a - \hat{\mu}_{pear})
 \right)
-\right\}) 
+\right\} \right) 
 \\
 \implies 0
 &=-\frac12 
@@ -621,13 +655,13 @@ Since $\log (1) = 0$, we get the following equality
 &(a - \hat{\mu}_{cherry})^T 
 \hat{\Sigma}_{\text{}}
 (a - \hat{\mu}_{cherry}) = (a - \hat{\mu}_{pear})^T 
-\hat{\Sigma}_{\text{pear}}^{-1} 
+\hat{\Sigma}_{\text{}}^{-1} 
 (a - \hat{\mu}_{pear}) 
 \\
 \implies 0 &= (a - \hat{\mu}_{cherry})^T 
 \hat{\Sigma}_{\text{}}^{-1}
 (a - \hat{\mu}_{cherry}) - (a - \hat{\mu}_{pear})^T 
-\hat{\Sigma}_{\text{pear}}^{-1} 
+\hat{\Sigma}_{\text{}}^{-1} 
 (a - \hat{\mu}_{pear}) 
 \\
 0 &=a^T\hat{\Sigma}_{\text{}}^{-1}a 
@@ -682,6 +716,116 @@ p \\q
 \right) - c \\
 &= q(mx + oy) + r(nx + py) - c \\
 \implies y &= -\frac{qm+rn}{qo+rp}x + \frac{c}{qo+rp} \\
+y&= f(x) \text{ is the decision boundary where $\lambda=1$ as desired.}
+\end{align*}
+
+
+
+\newpage
+\textbf{A5. Calculating Decision Boundary for Second Classification}
+
+The decision boundary is the equation $y = f(x)$ such that $\lambda=1$. In order to have cleaner derivation, let $a = \left( \begin{matrix}x \\y  \end{matrix}\right)$. We calculate the decision boundary by the following
+
+
+\begin{align*}
+\lambda &= \frac{f_{\text{cherry}}(x_i,y_i|\hat{\mu}_{\text{cherry}}, \hat{\Sigma}_{\text{cherry}})}{f_{\text{pear}} (x_i,y_i|\hat{\mu}_{\text{pear}}, \hat{\Sigma}_{\text{pear}})} \\
+&= \frac{\frac{1}{2\pi\sqrt{|\hat{\Sigma}_{\text{cherry}}|}} \exp\left\{-\frac12(a - \hat{\mu}_{cherry})^T \hat{\Sigma}_{\text{cherry}}^{-1} (a - \hat{\mu}_{cherry}) \right \}}
+{\frac{1}{2\pi\sqrt{|\hat{\Sigma}_{\text{pear}}|}} \exp\left\{-\frac12 (a - \hat{\mu}_{pear})^T \hat{\Sigma}_{\text{pear}}^{-1} (a - \hat{\mu}_{pear}) \right \}} \\
+&= \frac{\sqrt{| \hat{\Sigma}_{\text{pear}}| }}{\sqrt{| \hat{\Sigma}_{\text{cherry}}| }}
+\exp \left\{ 
+-\frac12 
+\left(
+(a - \hat{\mu}_{cherry})^T 
+\hat{\Sigma}_{\text{cherry}}^{-1}
+(a - \hat{\mu}_{cherry}) - 
+(a - \hat{\mu}_{pear})^T 
+\hat{\Sigma}_{\text{pear}}^{-1} 
+(a - \hat{\mu}_{pear})
+\right)
+\right\} 
+\end{align*}
+
+Since, the cutoff value is at $\lambda=1$, we set the $\lambda$ equal to 1 and simplify.
+
+\begin{align*}
+1 &= \frac{\sqrt{| \hat{\Sigma}_{\text{pear}}| }}{\sqrt{| \hat{\Sigma}_{\text{cherry}}| }}
+\exp \left\{ 
+-\frac12 
+\left(
+(a - \hat{\mu}_{cherry})^T 
+\hat{\Sigma}_{\text{cherry}}^{-1}
+(a - \hat{\mu}_{cherry}) - 
+(a - \hat{\mu}_{pear})^T 
+\hat{\Sigma}_{\text{pear}}^{-1} 
+(a - \hat{\mu}_{pear})
+\right)
+\right\} 
+\\ 
+\implies \log (1) 
+&= log \left(  \frac{\sqrt{| \hat{\Sigma}_{\text{pear}}| }}{\sqrt{| \hat{\Sigma}_{\text{cherry}}| }} 
+\exp \left\{ 
+-\frac12 
+\left(
+(a - \hat{\mu}_{cherry})^T 
+\hat{\Sigma}_{\text{cherry}}^{-1}
+(a - \hat{\mu}_{cherry}) - 
+(a - \hat{\mu}_{pear})^T 
+\hat{\Sigma}_{\text{pear}}^{-1} 
+(a - \hat{\mu}_{pear})
+\right)
+\right\} \right) 
+\\
+\implies 0
+&= log\left( \frac{\sqrt{| \hat{\Sigma}_{\text{pear}}| }}{\sqrt{| \hat{\Sigma}_{\text{cherry}}| }} \right)
+-\frac12 
+\left(
+(a - \hat{\mu}_{cherry})^T 
+\hat{\Sigma}_{\text{cherry}}^{-1}
+(a - \hat{\mu}_{cherry}) - 
+(a - \hat{\mu}_{pear})^T 
+\hat{\Sigma}_{\text{pear}}^{-1} 
+(a - \hat{\mu}_{pear})
+\right) \\
+&= a^T \underbrace{(\hat{\Sigma}_{\text{cherry}}^{-1} - \hat{\Sigma}_{\text{pear}}^{-1})}_{A} a 
+- a^T \underbrace{2(\hat{\Sigma}_{\text{cherry}}^{-1} + \hat{\mu}_{\text{cherry}} - \hat{\Sigma}_{\text{pear}}^{-1}\hat{\mu}_{\text{pear}})}_{B}
++ \underbrace{log\left( \frac{\sqrt{| \hat{\Sigma}_{\text{cherry}}| }}{\sqrt{| \hat{\Sigma}_{\text{pear}}| }} \right) }_{C}
+\end{align*}
+
+Since, $A$ is a $2\times 2$ matrix, $B$ is $2\times 1$ and $C$ is a constant then we can express the equality in terms of $x$ and $y$ then solve for $y$.
+
+\begin{align*}
+0 &=
+a^T A a - a B + C \\
+&= 
+\left(
+\begin{matrix}
+x &y
+\end{matrix}
+\right)
+\left(
+\begin{matrix}
+m &n \\ n &o
+\end{matrix}
+\right)
+\left(
+\begin{matrix}
+x \\y
+\end{matrix}
+\right)
+-
+\left(
+\begin{matrix}
+x &y
+\end{matrix}
+\right)
+\left(
+\begin{matrix}
+p \\q
+\end{matrix}
+\right) - c \\
+&= x(xm + yn) + y(xn + yo) + px + qy + c \\
+\implies0 &= (o)y^2 + (2nx+q)y + (mx^2 + px + c) \\
+\implies y &= \frac{-(2nx + q)}{2o} \sqrt{(2nx+q)^2 - 4o(mx^2 + px+c)} \\
 y&= f(x) \text{ is the decision boundary where $\lambda=1$ as desired.}
 \end{align*}
 
