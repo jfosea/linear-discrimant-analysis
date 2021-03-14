@@ -354,6 +354,7 @@ plot_linear
 Furthermore, I predicted all the possible points in the observation space to the closest 0.1 mm using the first classification rules and got the following results in the plot below. From figure 4, it is clear that the decision boundary is a linear equation that divides the observation space into 2 distinct regions. 
 
 Figure 4. Grid Plot of a Predicted Points in the Observation Space
+
 ```{r, echo=FALSE}
 plot_pred_boundary_linear
 ```
@@ -488,7 +489,7 @@ where
 
 \begin{align*}
 A &= `r o` \\
-B &= `r q`\\
+B &=  2(`r n`) x + `r q`\\
 C &= `r m` x^2 + `r p` x  `r c`
 \end{align*}
 
@@ -506,7 +507,7 @@ Furthermore, similar to the decision boundary in the first classification, I pre
 
 Figure 6. Grid Plot of Predicted Points in the Observation Space
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.height=3.5, fig.width=5}
 plot_pred_boundary_quad
 ```
 
@@ -514,7 +515,7 @@ In addition, when we compare the two different classifications, we observe that 
 
 Figure 7. Decision Boundary Comparison
 
-```{r, echo=FALSE, warning=FALSE}
+```{r, echo=FALSE, warning=FALSE, fig.height=3.5, fig.width=5}
 plot_both
 ```
 
