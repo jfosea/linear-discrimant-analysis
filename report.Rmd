@@ -321,7 +321,6 @@ kable(new1, col.names = c('id', 'lamda', 'classification'), format = "latex") %>
 \subsection{\normalsize{\textit{Decision Boundary}}}
 Using the derivation of the decision boundary found in A4 in the appendix, the decision boundary for the given in the formula below.
 
-
 ```{r, echo=FALSE}
 Sigma_inv <- solve(Sigma)
 p = (param_cherry$mu - param_pear$mu)[1]
@@ -335,10 +334,11 @@ slope = -(p*m+q*n)/(p*n+q*o)
 ```
 
 $$y = `r slope`x `r constant` $$
+The equation above is clearly a linear polynomial equation with degree 1. The decision boundary is plotted on the observation space as shown below. All the points above the decision boundary are classified as the cherry species and below are the pear species.
 
 Figure 3. Scatter Plot with Decision Boundary
 
-```{r, echo=FALSE, fig.height = 4, fig.width = 6, warning=FALSE}
+```{r, echo=FALSE, fig.height = 3.5, fig.width = 5, warning=FALSE}
 plot_linear
 ```
 
@@ -405,7 +405,6 @@ y-`r py`
 \end{align*}
 
 \subsection{\normalsize{\textit{Classification Rule}}}
-
 Similar to the first classification rule, we use the same cutoff $\lambda$ value and test cases. However, each corresponding $\lambda_i$ is now calculated as follows.
 
 \begin{align*}
@@ -443,7 +442,6 @@ sigB_inv = solve(param_pear$Sigma)
 m = (sigA_inv - sigB_inv)[1,1]
 n = (sigA_inv - sigB_inv)[1,2]
 o = (sigA_inv - sigB_inv)[2,2]
-
 p = as.numeric((-2*(sigA_inv %*% param_cherry$mu - sigB_inv %*% param_pear$mu))[1,1])
 q = as.numeric((-2*(sigA_inv %*% param_cherry$mu - sigB_inv %*% param_pear$mu))[2,1])
 
@@ -451,21 +449,46 @@ f1 = 2*(log(sqrt(det(param_cherry$Sigma)/det(param_pear$Sigma))))
 f2 = as.numeric(t(param_cherry$mu) %*% sigA_inv %*% param_cherry$mu) - as.numeric(t(param_pear$mu) %*% sigB_inv %*% param_pear$mu)
 c = f1 + f2
 
-x = 1
-
+x=1
 A = o
 B = (2*n*x+q)
 C = (m*x^2 + x*p + c)
 ```
 
-$$y = \frac{1}{2*A} -{B} - \sqrt{B^2 - 4AC}$$
+$$y = \frac{1}{2A} \left(-{B} - \sqrt{B^2 - 4AC} \right)$$
 where
 
-$$
-A = `r o` \\
-B= `r 2*n` x + `r q` \\
-C = `r m` x^2 + `r p` x + `r c`
-$$
+\begin{align*}
+A &= `r o` \\
+B &= `r q`\\
+C &= `r m` x^2 + `r p` x  `r c`
+\end{align*}
+
+The equation above is clearly a quadratic polynomial equation with degree 2. The decision boundary is
+plotted on the observation space as shown below. All the points above the decision boundary are
+classified as the cherry species and below are the pear species.
+
+Figure 5. Scatter Plot with Decision Boundary
+
+```{r, fig.height=3.5, fig.width=5, echo=FALSE, warning=FALSE}
+plot_quadratic
+```
+
+Furthermore, similar to the decision boundary in the first classification, I predicted every possible sample in the observation space to the closest 0.1 mm and plotted the predictions as shown in figure 6.
+
+Figure 6. Grid Plot of Predicted Points in the Observation Space
+
+```{r, echo=FALSE}
+```
+
+In addition, when we compare the two different classifications, we observe that the decision boundary between the two are different. The first classification has a decision boundary that is linear and the second classification has a decision boundary that is quadratic. We can observe the difference in the figure 7 below.
+
+Figure 7. Decision Boundary Comparison
+
+```{r, echo=FALSE}
+plot_both
+```
+
 
 \newpage
 \section{Conclusion}
